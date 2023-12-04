@@ -1,7 +1,9 @@
 {
     "scripts": {
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+        "gen-client": "anchor-client-gen ./target/idl/solmap.json ./src/client",
+        "anchor-test": "anchor test"
     },
     "dependencies": {
         "@coral-xyz/anchor": "^0.28.0",

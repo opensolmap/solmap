@@ -51,6 +51,8 @@ describe("solmap", () => {
   before(async () => {
     await connection.requestAirdrop(payer.publicKey, 1000000000);
 
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     await program.methods
       .initIndex()
       .accounts({
