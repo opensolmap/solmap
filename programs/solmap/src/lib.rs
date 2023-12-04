@@ -53,7 +53,7 @@ pub mod solmap {
     pub fn init_index(ctx: Context<InitIndex>) -> Result<()> {
         if ctx.accounts.slot_index.data_is_empty() {
             let bump = ctx.bumps.slot_index;
-            msg!("Initializing or resizing slot index account");
+            msg!("Initializing slot index account");
             create_or_allocate_account_raw(
                 crate::ID,
                 &ctx.accounts.slot_index,
@@ -243,7 +243,6 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
 
     // Slot must already exist.
     let current_slot = Clock::get()?.slot;
-    msg!("Current slot: {:?}", current_slot);
     if solmap_number * 1000 > current_slot {
         return Err(SolmapError::InvalidSolmapNumber.into());
     }
@@ -252,16 +251,13 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     let slot_index = &mut ctx.accounts.slot_index.data.borrow_mut();
     let slot_index_bits = slot_index.view_bits_mut::<Lsb0>();
 
-    msg!("Slot index bits: {:?}", slot_index_bits.len());
     let mut slot_index_bit = slot_index_bits.get_mut(solmap_number as usize).unwrap();
-    msg!("Slot index bit: {:?}", *slot_index_bit);
 
     if *slot_index_bit {
         return Err(SolmapError::SolmapAlreadyMinted.into());
     } else {
         *slot_index_bit = true;
     }
-    msg!("Slot index bit: {:?}", *slot_index_bit);
 
     // Create mint and ATA.
     let create_args = CreateArgs::V1 {
@@ -361,6 +357,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         },
     )?;
 
+    // Resize inscription data account.
     libreplex_inscriptions::cpi::resize_inscription(
         CpiContext::new(
             inscriptions_program.to_account_info(),
@@ -384,6 +381,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         },
     )?;
 
+    // Write inscription data.
     libreplex_inscriptions::cpi::write_to_inscription(
         CpiContext::new(
             inscriptions_program.to_account_info(),
@@ -404,6 +402,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         },
     )?;
 
+    // Make inscription immutable.
     libreplex_inscriptions::cpi::make_inscription_immutable(CpiContext::new(
         inscriptions_program.to_account_info(),
         MakeInscriptionImmutable {
