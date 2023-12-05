@@ -42,7 +42,6 @@ const COMMUNITY_TREASURY: Pubkey = pubkey!("moar8bV9AjnbMMF9xZ6LYV6BUwZHiepGciWD
 pub struct SlotIndex {
     // we don't want to deserialize this data, so no explicit fields
     // we use a bitvec to track minted slots
-    // pub slots: BitVec<usize>
     // 0 represents unminted, 1 represents minted
 }
 
@@ -168,27 +167,27 @@ pub struct MintSolmap<'info> {
     )]
     pub fvca: UncheckedAccount<'info>,
 
-    /// CHECK: Checked in CPI call
+    /// CHECK: Validated by inscriptions program
     #[account(mut)]
     pub inscription: UncheckedAccount<'info>,
     
-    /// CHECK: Checked in CPI call
+    /// CHECK: Validated by inscriptions program
     #[account(mut)]
     pub inscription_v3: UncheckedAccount<'info>,
     
-    /// CHECK: Checked in CPI call
+    /// CHECK: Validated by inscriptions program
     #[account(mut)]
     pub inscription_data: UncheckedAccount<'info>,
     
-    /// CHECK: Checked in CPI call
+    /// CHECK: Validated by inscriptions program
     #[account(mut)]
     pub inscription_ranks_current_page: UncheckedAccount<'info>,
     
-    /// CHECK: Checked in CPI call
+    /// CHECK: Validated by inscriptions program
     #[account(mut)]
     pub inscription_ranks_next_page: UncheckedAccount<'info>,
 
-    /// CHECK: seed check here and validation in Inscriber program
+    /// CHECK: seed check here and validation in inscription program
     #[account(mut, 
         seeds = ["inscription_summary".as_bytes()],
         bump,
@@ -219,6 +218,8 @@ pub struct MintSolmap<'info> {
 
 pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> {
     msg!("Minting Solmap #{:?}", solmap_number);
+    let fvca = &ctx.accounts.fvca;
+
     let inscription = &ctx.accounts.inscription;
     let inscription_v3 = &ctx.accounts.inscription_v3;
     let inscription_data = &ctx.accounts.inscription_data;
@@ -266,7 +267,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         uri: SOLMAP_URI.to_string(),
         seller_fee_basis_points: 0,
         creators: Some(vec![Creator {
-            address: ctx.accounts.fvca.key(),
+            address: fvca.key(),
             verified: false, // We have to verify this in a separate ix.
             share: 100,
         }]),
@@ -290,12 +291,12 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         .master_edition(Some(master_edition))
         .mint(&mint.to_account_info(), true)
         .authority(authority)
-        .update_authority(authority, true)
+        .update_authority(fvca, true)
         .system_program(system_program)
         .spl_token_program(token_program)
         .sysvar_instructions(sysvar_instructions)
         .create_args(create_args)
-        .invoke()?;
+        .invoke_signed(&[fvca_seeds])?;
 
     // Mint token.
     let mint_args = MintArgs::V1 {
@@ -310,14 +311,14 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         .metadata(metadata)
         .master_edition(Some(master_edition))
         .mint(&mint.to_account_info())
-        .authority(authority)
+        .authority(fvca)
         .payer(authority)
         .system_program(system_program)
         .spl_token_program(token_program)
         .spl_ata_program(associated_token_program)
         .sysvar_instructions(sysvar_instructions)
         .mint_args(mint_args)
-        .invoke()?;
+        .invoke_signed(&[fvca_seeds])?;
 
     // Verify creator.
     let sign_accounts = SignMetadataCpiAccounts {
