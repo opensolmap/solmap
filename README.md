@@ -1,6 +1,7 @@
 # The Open Solmap Theory
 
-Solmaps give you the **power of digital ownership** over a plot of Solana (1000 slots) and **************************************************************freedom to build unconstrained************************************************************** in the context of a ************************************************consensus and community-driven project.************************************************
+Solmaps give you the **power of digital ownership** over a plot of Solana (1000 slots) and freedom to build unconstrained ownership in the context
+of a consensus and community-driven project.
 
 Each Solmap Inscription represents ownership of 1,000 consecutive Solana slots, allowing holders to explore on-chain data from those slots.
 
