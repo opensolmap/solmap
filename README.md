@@ -1,47 +1,46 @@
 # The Open Solmap Theory
 
-Solmaps give you the **power of digital ownership** over a plot of Solana (1000 slots) and freedom to build unconstrained ownership in the context
-of a consensus and community-driven project.
+Solmaps give you the power of digital ownership over 1,000 consecutive Solana slots, allowing you to explore on-chain data and build unconstrained ownership within a consensus-driven community project.  
 
-Each Solmap Inscription represents ownership of 1,000 consecutive Solana slots, allowing holders to explore on-chain data from those slots.
+Each Solmap inscription represents ownership of 1,000 sequential Solana slots. For example, if you inscribe `12345.solmap`, you will own:
 
-You will be able to own 1000 slots of solana - we call it a plot, which means if you inscribe `12345.solmap`, you will be able to own
+- An NFT and an inscription representing `12345.solmap`
+- The 1,000 Solana slots from `12345000` to `12345999` (12345 * 1000)
+- Slot `12345000` will be the main slot for the plot
 
-- An NFT and an inscription of `12345.solmap`
-- And, 1000 slots from 12,345,000 to 12,345,999
-- The first slot 12345000 will be the main slot of the plot.
+With about 232 million slots total, there can be around 232,000 Solmap inscriptions so far. This provides ample room for exploration and creation.
 
-There’re so many nice properties of a solmap. Slot height is about 232M (you get 1000 slots for every single solmap). So, there will be about 232K total supply of solmap. For example, here’s a link of the explorer of the slots and blocks explanation
+We encourage everyone to build, collaborate, and tap into the native properties of Solana slots and blocks by adding layers and meanings. Potential areas to build on top of Solmaps include:
 
-- https://explorer.solana.com/block/234437351
+- Block attributes
+- Block transactions
+- Block rewards 
+- Block programs
+- Block accounts
 
-We encourage everyone to explore, build, and collaborate on the solmap theory. There are so many native solana properties of a slot / block that we can add to the solmap universe. 
+# Key Principles
 
-- Block Attributes
-- Block Txs
-- Block Rewards
-- Block Programs
-- Block Accounts
+**Simple and Open Design**
 
-# Simple and Open Design
+- Immutable inscriptions  
+- Decentralized multi-signature governance
+- Simple NFT and inscription metadata
+- Open ecosystem for generative art, games, etc.
 
-- Immutable by default
-- Decentralized multi-sig governance
-- Simple NFT metadata
-- Simple Inscription metadata
-- Open invitation to generative art design, metaverse games, and much more.
+**Provenance & Indexing Rules**
 
-# Provenance & Indexing Rules
+Validity and scarcity are enforced by the Solmaps program:
 
-Provenance and validation rules are validated by the open-source program of solmap.
+- Inscriptions are immutable
+- Strict formatting validation 
+- First-inscription-is-valid rule  
+- Slots must be valid at time of minting. As long as the slot like `232000999` exists, one can mint `232000.solmap`
 
-- Every inscription is immutable
-- Every inscription has the format like this `(/^(0|[1-9][0-9]*)\.solmap$`
-- first-is-first rule
-    - The first solmap will be the legit one. No one can mint a duplicate solmap
-- The slots you own must be valid
-    - At the time of minting, the slots owned by this solmap have to be valid
-    - For example, when you mint 12345, which means the largest slot you own 12345999 should have already existed.
+# Future Possibilities 
+
+- Metaverse games
+- Generative art  
+- Customized traits and rarity
 
 # Development
 
@@ -49,9 +48,3 @@ Provenance and validation rules are validated by the open-source program of solm
 anchor build
 anchor test
 ```
-
-# Future Applications
-
-- Metaverse games
-- Generative art and data visualization
-- Customized traits and rarity
