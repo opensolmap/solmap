@@ -41,7 +41,11 @@ const COMMUNITY_TREASURY: Pubkey = pubkey!("moar8bV9AjnbMMF9xZ6LYV6BUwZHiepGciWD
 const SOLMAP_URI: &str = "https://arweave.net/kcYr0Mhrbp1RaAUTPucoBDfwnPX_GbvScACNDpLdsE8";
 const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp");
 
-const GO_LIVE_DATE: i64 = 1703062800; // 2023-12-20T00:00:00Z
+const GO_LIVE_DATE: i64 = if cfg!(feature = "anchor-test") {
+    0 // Always live for tests.
+} else {
+    1703062800 // 2023-12-20T00:00:00Z
+};
 
 #[account(zero_copy)]
 pub struct SlotIndex {
