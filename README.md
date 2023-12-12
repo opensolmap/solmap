@@ -29,11 +29,11 @@ We encourage everyone to build, collaborate, and tap into the native properties 
 
 **Provenance & Indexing Rules**
 
-Validity and scarcity are enforced by the Solmaps program:
+Validity and scarcity are enforced by the Solmap onchain program, arbitrary inscription content will not be indexed.
 
 - Inscriptions are immutable
-- Strict formatting validation 
-- First-inscription-is-valid rule  
+- Strict formatting validation via onchain program
+- First-inscription-is-valid rule via onchain program
 - Slots must be valid at time of minting. As long as the slot like `232000999` exists, one can mint `232000.solmap`
 
 # Future Possibilities 
