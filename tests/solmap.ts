@@ -240,7 +240,7 @@ describe("solmap", () => {
     } catch (_err) {
       assert.isTrue(_err instanceof ProgramError);
       const err: ProgramError = _err;
-      expect(err.code).to.equal(6000);
+      expect(err.code).to.equal(6001);
       expect(err.msg).to.equal("Invalid Solmap number");
     }
 
@@ -384,7 +384,7 @@ describe("solmap", () => {
     } catch (_err) {
       assert.isTrue(_err instanceof ProgramError);
       const err: ProgramError = _err;
-      expect(err.code).to.equal(6001);
+      expect(err.code).to.equal(6002);
       expect(err.msg).to.equal("Solmap already minted");
     }
   });

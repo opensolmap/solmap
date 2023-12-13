@@ -38,6 +38,15 @@ declare_id!("9iSon7JwYNRF5UuCgvwucFRDSPGxLFuNCghr56q5khwR");
 const COMMUNITY_GRANT_FEE: u64 = 50_000_000; // 0.05 SOL
 const COMMUNITY_TREASURY: Pubkey = pubkey!("moar8bV9AjnbMMF9xZ6LYV6BUwZHiepGciWDfVUT9uX");
 
+const SOLMAP_URI: &str = "https://arweave.net/kcYr0Mhrbp1RaAUTPucoBDfwnPX_GbvScACNDpLdsE8";
+const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp");
+
+const GO_LIVE_DATE: i64 = if cfg!(feature = "anchor-test") {
+    0 // Always live for tests.
+} else {
+    1703062800 // 2023-12-20T00:00:00Z
+};
+
 #[account(zero_copy)]
 pub struct SlotIndex {
     // we don't want to deserialize this data, so no explicit fields
@@ -79,9 +88,6 @@ pub mod solmap {
         mint_handler(ctx, solmap)
     }
 }
-
-const SOLMAP_URI: &str = "https://arweave.net/kcYr0Mhrbp1RaAUTPucoBDfwnPX_GbvScACNDpLdsE8";
-const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp");
 
 #[rustfmt::skip]
 #[derive(Accounts)]
@@ -217,6 +223,12 @@ pub struct MintSolmap<'info> {
 }
 
 pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> {
+    // GO LIVE DATE CHECK
+    let clock = Clock::get()?;
+    if clock.unix_timestamp < GO_LIVE_DATE {
+        return Err(SolmapError::MintingNotLiveYet.into());
+    }
+
     msg!("Minting Solmap #{:?}", solmap_number);
     let fvca = &ctx.accounts.fvca;
 
@@ -243,7 +255,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     // Solmap validations
 
     // Slot must already exist.
-    let current_slot = Clock::get()?.slot;
+    let current_slot = clock.slot;
     if solmap_number * 1000 > current_slot {
         return Err(SolmapError::InvalidSolmapNumber.into());
     }
