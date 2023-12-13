@@ -7,6 +7,9 @@ edition = "2021"
 name = "solmap"
 path = "src/main.rs"
 
+[features]
+anchor-test = []
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
