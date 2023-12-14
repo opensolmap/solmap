@@ -351,8 +351,8 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
                 inscription_summary: inscription_summary.to_account_info(),
 
                 root: mint.to_account_info(),
-                /// since root in this case can sign (we are creating a brand new mint),
-                /// it will sign
+                // since root in this case can sign (we are creating a brand new mint),
+                // it will sign
                 signer: mint.to_account_info(),
                 inscription: inscription.to_account_info(),
                 inscription2: inscription_v3.to_account_info(),

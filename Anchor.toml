@@ -1,6 +1,7 @@
 [features]
 seeds = false
 skip-lint = false
+
 [programs.localnet]
 solmap = "9iSon7JwYNRF5UuCgvwucFRDSPGxLFuNCghr56q5khwR"
 
