@@ -253,7 +253,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
 
     // Slot must already exist.
     let current_slot = clock.slot;
-    if solmap_number * 1000 > current_slot {
+    if (solmap_number + 1) * 1000 > current_slot {
         return Err(SolmapError::InvalidSolmapNumber.into());
     }
 
