@@ -20,7 +20,7 @@ pub fn mint(args: MintArgs) -> Result<()> {
 
     let mint = Keypair::new();
 
-    let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(800_000);
+    let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(400_000);
     let mint_solmap_ix =
         create_mint_solmap_ix(config.keypair.pubkey(), mint.pubkey(), args.solmap_number);
     let instructions = vec![compute_budget_ix, mint_solmap_ix];
