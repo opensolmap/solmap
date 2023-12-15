@@ -48,3 +48,21 @@ Validity and scarcity are enforced by the Solmap onchain program, arbitrary insc
 anchor build
 anchor test
 ```
+
+# CLI
+
+Install on Linux or Mac with:
+
+bash <(curl -sSf https://raw.githubusercontent.com/opensolmap/solmap/main/scripts/install.sh)
+
+## Check if a Solmap is minted
+
+```bash
+solmap check 12345
+```
+
+## Mint a Solmap
+
+```bash
+solmap mint 12345
+```
