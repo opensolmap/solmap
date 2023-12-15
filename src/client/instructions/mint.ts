@@ -16,11 +16,8 @@ export interface MintAccounts {
   metadata: PublicKey
   masterEdition: PublicKey
   fvca: PublicKey
-  inscription: PublicKey
   inscriptionV3: PublicKey
   inscriptionData: PublicKey
-  inscriptionRanksCurrentPage: PublicKey
-  inscriptionRanksNextPage: PublicKey
   inscriptionSummary: PublicKey
   inscriptionsProgram: PublicKey
   systemProgram: PublicKey
@@ -46,19 +43,8 @@ export function mint(
     { pubkey: accounts.metadata, isSigner: false, isWritable: true },
     { pubkey: accounts.masterEdition, isSigner: false, isWritable: true },
     { pubkey: accounts.fvca, isSigner: false, isWritable: false },
-    { pubkey: accounts.inscription, isSigner: false, isWritable: true },
     { pubkey: accounts.inscriptionV3, isSigner: false, isWritable: true },
     { pubkey: accounts.inscriptionData, isSigner: false, isWritable: true },
-    {
-      pubkey: accounts.inscriptionRanksCurrentPage,
-      isSigner: false,
-      isWritable: true,
-    },
-    {
-      pubkey: accounts.inscriptionRanksNextPage,
-      isSigner: false,
-      isWritable: true,
-    },
     { pubkey: accounts.inscriptionSummary, isSigner: false, isWritable: true },
     {
       pubkey: accounts.inscriptionsProgram,
