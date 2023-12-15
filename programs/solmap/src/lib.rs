@@ -12,13 +12,10 @@ use libreplex_inscriptions::{
     cpi::accounts::WriteToInscription,
     instructions::{SignerType, WriteToInscriptionInput},
 };
+use mpl_token_metadata::types::{CreateArgs, Creator, MintArgs, TokenStandard};
 use mpl_token_metadata::{
     instructions::{CreateCpiBuilder, MintCpiBuilder},
     types::PrintSupply,
-};
-use mpl_token_metadata::{
-    instructions::{SignMetadataCpi, SignMetadataCpiAccounts},
-    types::{CreateArgs, Creator, MintArgs, TokenStandard},
 };
 use solana_program::{
     program::invoke,
@@ -38,7 +35,7 @@ declare_id!("9iSon7JwYNRF5UuCgvwucFRDSPGxLFuNCghr56q5khwR");
 const COMMUNITY_GRANT_FEE: u64 = 50_000_000; // 0.05 SOL
 const COMMUNITY_TREASURY: Pubkey = pubkey!("moar8bV9AjnbMMF9xZ6LYV6BUwZHiepGciWDfVUT9uX");
 
-const SOLMAP_URI: &str = "https://arweave.net/kcYr0Mhrbp1RaAUTPucoBDfwnPX_GbvScACNDpLdsE8";
+const SOLMAP_URI: &str = "https://arweave.net/KtjcXOfeTK0RnUtLuVNBBtPG6iXH4ySncYEW-bl-NHk";
 const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp");
 
 const GO_LIVE_DATE: i64 = if cfg!(feature = "anchor-test") {
@@ -109,7 +106,7 @@ pub struct InitIndex<'info> {
 #[derive(Accounts)]
 pub struct MintSolmap<'info> {
     #[account(mut)]
-    pub authority: Signer<'info>,
+    pub minter: Signer<'info>,
 
     /// CHECK: seeds check here
     #[account(mut, seeds = ["slot_index".as_bytes()], bump)]
@@ -121,17 +118,17 @@ pub struct MintSolmap<'info> {
 
     #[account(
         init,
-        payer = authority,
+        payer = minter,
         mint::decimals = 0,
-        mint::freeze_authority = authority,
-        mint::authority = authority
+        mint::freeze_authority = minter,
+        mint::authority = minter
     )]    
     pub mint: Account<'info, Mint>,
 
     /// CHECK: seeds check here, Token Metadata provides the rest of validations
     #[account(mut,
         seeds = [
-            authority.key().as_ref(),
+            minter.key().as_ref(),
             token_program.key().as_ref(),
             mint.key().as_ref()
         ],
@@ -237,7 +234,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     let inscription_data = &ctx.accounts.inscription_data;
     let inscription_summary = &ctx.accounts.inscription_summary;
 
-    let authority = &ctx.accounts.authority;
+    let minter = &ctx.accounts.minter;
     let mint = &ctx.accounts.mint;
     let token_account = &ctx.accounts.token_account;
     let metadata = &ctx.accounts.metadata;
@@ -280,7 +277,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         seller_fee_basis_points: 0,
         creators: Some(vec![Creator {
             address: fvca.key(),
-            verified: false, // We have to verify this in a separate ix.
+            verified: true,
             share: 100,
         }]),
         primary_sale_happened: true,
@@ -298,11 +295,11 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
 
     let mut create_builder = CreateCpiBuilder::new(&ctx.accounts.token_metadata_program);
     create_builder
-        .payer(authority)
+        .payer(minter)
         .metadata(metadata)
         .master_edition(Some(master_edition))
         .mint(&mint.to_account_info(), true)
-        .authority(authority)
+        .authority(minter)
         .update_authority(fvca, true)
         .system_program(system_program)
         .spl_token_program(token_program)
@@ -319,25 +316,17 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     let mut mint_builder = MintCpiBuilder::new(&ctx.accounts.token_metadata_program);
     mint_builder
         .token(token_account)
-        .token_owner(Some(authority))
+        .token_owner(Some(minter))
         .metadata(metadata)
         .master_edition(Some(master_edition))
         .mint(&mint.to_account_info())
         .authority(fvca)
-        .payer(authority)
+        .payer(minter)
         .system_program(system_program)
         .spl_token_program(token_program)
         .spl_ata_program(associated_token_program)
         .sysvar_instructions(sysvar_instructions)
         .mint_args(mint_args)
-        .invoke_signed(&[fvca_seeds])?;
-
-    // Verify creator.
-    let sign_accounts = SignMetadataCpiAccounts {
-        metadata: &ctx.accounts.metadata,
-        creator: &ctx.accounts.fvca,
-    };
-    SignMetadataCpi::new(&ctx.accounts.token_metadata_program, sign_accounts)
         .invoke_signed(&[fvca_seeds])?;
 
     // Create inscription.
@@ -358,12 +347,12 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
                 inscription2: inscription_v3.to_account_info(),
 
                 system_program: system_program.to_account_info(),
-                payer: ctx.accounts.authority.to_account_info(),
+                payer: ctx.accounts.minter.to_account_info(),
                 inscription_data: inscription_data.to_account_info(),
             },
         ),
         libreplex_inscriptions::instructions::CreateInscriptionInput {
-            authority: Some(authority.key()), // this includes update auth / holder, hence
+            authority: Some(minter.key()), // this includes update auth / holder, hence
             current_rank_page: 0,
             signer_type: SignerType::Root,
             validation_hash: None,
@@ -378,11 +367,11 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
                 /* the inscription root is set to metaplex
                  inscription object.
                 */
-                authority: authority.to_account_info(),
+                authority: minter.to_account_info(),
 
                 inscription: inscription.to_account_info(),
                 system_program: system_program.to_account_info(),
-                payer: authority.to_account_info(),
+                payer: minter.to_account_info(),
                 inscription_data: inscription_data.to_account_info(),
                 inscription2: Some(inscription_v3.to_account_info()),
             },
@@ -399,8 +388,8 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         CpiContext::new(
             inscriptions_program.to_account_info(),
             WriteToInscription {
-                authority: authority.to_account_info(),
-                payer: authority.to_account_info(),
+                authority: minter.to_account_info(),
+                payer: minter.to_account_info(),
                 inscription: inscription.to_account_info(),
                 inscription2: Some(inscription_v3.to_account_info()),
                 system_program: system_program.to_account_info(),
@@ -419,8 +408,8 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     libreplex_inscriptions::cpi::make_inscription_immutable(CpiContext::new(
         inscriptions_program.to_account_info(),
         MakeInscriptionImmutable {
-            payer: authority.to_account_info(),
-            authority: authority.to_account_info(),
+            payer: minter.to_account_info(),
+            authority: minter.to_account_info(),
             inscription_summary: inscription_summary.to_account_info(),
             inscription: inscription.to_account_info(),
             inscription2: Some(inscription_v3.to_account_info()),
@@ -431,12 +420,12 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     // Pay community treasury to fund project grants.
     invoke(
         &system_instruction::transfer(
-            ctx.accounts.authority.key,
+            ctx.accounts.minter.key,
             ctx.accounts.treasury.key,
             COMMUNITY_GRANT_FEE,
         ),
         &[
-            ctx.accounts.authority.to_account_info(),
+            ctx.accounts.minter.to_account_info(),
             ctx.accounts.treasury.to_account_info(),
         ],
     )?;
