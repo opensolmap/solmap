@@ -2108,27 +2108,13 @@ dependencies = [
 
 [[package]]
 name = "libreplex_inscriptions"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf43935d4f6245288882d19a9cd5b073293361fde3807c4e5186bd0c4f66b9d7"
+checksum = "3e9d25382d3d07591ef578a41cb49b39159d43caa80b67afe7e18e7159570211"
 dependencies = [
  "anchor-attribute-event",
  "anchor-derive-accounts",
  "anchor-lang",
-]
-
-[[package]]
-name = "libreplex_legacy"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba924766000212e780f026e7d2349ffe3ec97b449524cbfc0751e6f7169acca6"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "libreplex_inscriptions",
- "mpl-token-metadata",
- "solana-program",
- "spl-associated-token-account 2.2.0",
 ]
 
 [[package]]
@@ -4373,7 +4359,6 @@ dependencies = [
  "bitvec",
  "bytemuck",
  "libreplex_inscriptions",
- "libreplex_legacy",
  "mpl-token-metadata",
  "solana-program",
 ]

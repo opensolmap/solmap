@@ -6,10 +6,9 @@ use anchor_spl::{
 };
 use bitvec::prelude::*;
 use libreplex_inscriptions::{
-    cpi::accounts::CreateInscriptionV2,
-    cpi::accounts::MakeInscriptionImmutable,
-    cpi::accounts::ResizeInscription,
-    cpi::accounts::WriteToInscription,
+    cpi::accounts::{
+        CreateInscriptionV3, MakeInscriptionImmutableV3, ResizeInscriptionV3, WriteToInscriptionV3,
+    },
     instructions::{SignerType, WriteToInscriptionInput},
 };
 use mpl_token_metadata::types::{CreateArgs, Creator, MintArgs, TokenStandard};
@@ -43,13 +42,6 @@ const GO_LIVE_DATE: i64 = if cfg!(feature = "anchor-test") {
 } else {
     1703062800 // 2023-12-20T00:00:00Z
 };
-
-#[account(zero_copy)]
-pub struct SlotIndex {
-    // we don't want to deserialize this data, so no explicit fields
-    // we use a bitvec to track minted slots
-    // 0 represents unminted, 1 represents minted
-}
 
 #[program]
 pub mod solmap {
@@ -169,10 +161,6 @@ pub struct MintSolmap<'info> {
         bump
     )]
     pub fvca: UncheckedAccount<'info>,
-
-    /// CHECK: Validated by inscriptions program
-    #[account(mut)]
-    pub inscription: UncheckedAccount<'info>,
     
     /// CHECK: Validated by inscriptions program
     #[account(mut)]
@@ -182,14 +170,6 @@ pub struct MintSolmap<'info> {
     #[account(mut)]
     pub inscription_data: UncheckedAccount<'info>,
     
-    /// CHECK: Validated by inscriptions program
-    #[account(mut)]
-    pub inscription_ranks_current_page: UncheckedAccount<'info>,
-    
-    /// CHECK: Validated by inscriptions program
-    #[account(mut)]
-    pub inscription_ranks_next_page: UncheckedAccount<'info>,
-
     /// CHECK: seed check here and validation in inscription program
     #[account(mut, 
         seeds = ["inscription_summary".as_bytes()],
@@ -229,7 +209,6 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     msg!("Minting Solmap #{:?}", solmap_number);
     let fvca = &ctx.accounts.fvca;
 
-    let inscription = &ctx.accounts.inscription;
     let inscription_v3 = &ctx.accounts.inscription_v3;
     let inscription_data = &ctx.accounts.inscription_data;
     let inscription_summary = &ctx.accounts.inscription_summary;
@@ -250,6 +229,9 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     let solmap_bytes = solmap_string.as_bytes();
 
     // Solmap validations
+
+    // Slots are stored in the slot index account as a bit array.
+    // 1 means minted, 0 means not minted.
 
     // Slot must already exist.
     let current_slot = clock.slot;
@@ -330,10 +312,10 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         .invoke_signed(&[fvca_seeds])?;
 
     // Create inscription.
-    libreplex_inscriptions::cpi::create_inscription_v2(
+    libreplex_inscriptions::cpi::create_inscription_v3(
         CpiContext::new(
             ctx.accounts.inscriptions_program.to_account_info(),
-            CreateInscriptionV2 {
+            CreateInscriptionV3 {
                 /* the inscription root is set to metaplex
                     inscription object.
                 */
@@ -343,37 +325,34 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
                 // since root in this case can sign (we are creating a brand new mint),
                 // it will sign
                 signer: mint.to_account_info(),
-                inscription: inscription.to_account_info(),
-                inscription2: inscription_v3.to_account_info(),
+                inscription_v3: inscription_v3.to_account_info(),
 
                 system_program: system_program.to_account_info(),
                 payer: ctx.accounts.minter.to_account_info(),
                 inscription_data: inscription_data.to_account_info(),
             },
         ),
-        libreplex_inscriptions::instructions::CreateInscriptionInput {
+        libreplex_inscriptions::instructions::CreateInscriptionInputV3 {
             authority: Some(minter.key()), // this includes update auth / holder, hence
-            current_rank_page: 0,
             signer_type: SignerType::Root,
             validation_hash: None,
         },
     )?;
 
     // Resize inscription data account.
-    libreplex_inscriptions::cpi::resize_inscription(
+    libreplex_inscriptions::cpi::resize_inscription_v3(
         CpiContext::new(
             inscriptions_program.to_account_info(),
-            ResizeInscription {
+            ResizeInscriptionV3 {
                 /* the inscription root is set to metaplex
                  inscription object.
                 */
                 authority: minter.to_account_info(),
 
-                inscription: inscription.to_account_info(),
                 system_program: system_program.to_account_info(),
                 payer: minter.to_account_info(),
                 inscription_data: inscription_data.to_account_info(),
-                inscription2: Some(inscription_v3.to_account_info()),
+                inscription_v3: inscription_v3.to_account_info(),
             },
         ),
         libreplex_inscriptions::instructions::ResizeInscriptionInput {
@@ -384,14 +363,13 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     )?;
 
     // Write inscription data.
-    libreplex_inscriptions::cpi::write_to_inscription(
+    libreplex_inscriptions::cpi::write_to_inscription_v3(
         CpiContext::new(
             inscriptions_program.to_account_info(),
-            WriteToInscription {
+            WriteToInscriptionV3 {
                 authority: minter.to_account_info(),
                 payer: minter.to_account_info(),
-                inscription: inscription.to_account_info(),
-                inscription2: Some(inscription_v3.to_account_info()),
+                inscription_v3: inscription_v3.to_account_info(),
                 system_program: system_program.to_account_info(),
                 inscription_data: inscription_data.to_account_info(),
             },
@@ -405,14 +383,13 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     )?;
 
     // Make inscription immutable.
-    libreplex_inscriptions::cpi::make_inscription_immutable(CpiContext::new(
+    libreplex_inscriptions::cpi::make_inscription_immutable_v3(CpiContext::new(
         inscriptions_program.to_account_info(),
-        MakeInscriptionImmutable {
+        MakeInscriptionImmutableV3 {
             payer: minter.to_account_info(),
             authority: minter.to_account_info(),
             inscription_summary: inscription_summary.to_account_info(),
-            inscription: inscription.to_account_info(),
-            inscription2: Some(inscription_v3.to_account_info()),
+            inscription_v3: inscription_v3.to_account_info(),
             system_program: system_program.to_account_info(),
         },
     ))?;
