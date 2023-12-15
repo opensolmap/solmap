@@ -130,7 +130,7 @@ describe("solmap", () => {
       .mint(solmapNum)
       .preInstructions([computeBudgetIx])
       .accounts({
-        authority: payer.publicKey,
+        minter: payer.publicKey,
         slotIndex,
         treasury: TREASURY,
         mint: mint.publicKey,
@@ -210,7 +210,7 @@ describe("solmap", () => {
         .mint(solmapNum)
         .preInstructions([computeBudgetIx])
         .accounts({
-          authority: payer.publicKey,
+          minter: payer.publicKey,
           slotIndex,
           treasury: TREASURY,
           mint: mint.publicKey,
@@ -271,7 +271,7 @@ describe("solmap", () => {
       .mint(solmapNum)
       .preInstructions([computeBudgetIx])
       .accounts({
-        authority: payer.publicKey,
+        minter: payer.publicKey,
         slotIndex,
         treasury: TREASURY,
         mint: mint.publicKey,
@@ -354,7 +354,7 @@ describe("solmap", () => {
         .mint(solmapNum)
         .preInstructions([computeBudgetIx])
         .accounts({
-          authority: payer.publicKey,
+          minter: payer.publicKey,
           slotIndex,
           treasury: TREASURY,
           mint: secondMint.publicKey,
