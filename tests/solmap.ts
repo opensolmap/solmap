@@ -45,7 +45,7 @@ describe("solmap", () => {
   const tmCoder = new BorshAccountsCoder(tokenMetadataIdl);
 
   const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
-    units: 800_000
+    units: 400_000
   });
 
   before(async () => {
@@ -83,7 +83,6 @@ describe("solmap", () => {
   let metadata: PublicKey;
   let masterEdition: PublicKey;
   let tokenAccount: PublicKey;
-  let inscription: PublicKey;
   let inscriptionV3: PublicKey;
   let inscriptionData: PublicKey;
 
@@ -118,13 +117,12 @@ describe("solmap", () => {
     )[0];
 
     // Inscription Accounts
-    inscription = findInscriptionKey(mint.publicKey);
     inscriptionV3 = findInscriptionV3Key(mint.publicKey);
     inscriptionData = findInscriptionDataKey(mint.publicKey);
   });
 
   it("Mints a Metaplex NFT and inscribes it", async () => {
-    const solmapNum = new anchor.BN(1);
+    const solmapNum = new anchor.BN(0);
 
     const tx = await program.methods
       .mint(solmapNum)
@@ -138,11 +136,8 @@ describe("solmap", () => {
         metadata,
         masterEdition,
         fvca,
-        inscription,
         inscriptionV3,
         inscriptionData,
-        inscriptionRanksCurrentPage,
-        inscriptionRanksNextPage,
         inscriptionSummary,
         inscriptionsProgram: INSCRIPTION_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -156,12 +151,11 @@ describe("solmap", () => {
         skipPreflight: true
       });
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Check that accounts were created.
     const mintAccount = await connection.getAccountInfo(mint.publicKey);
     const metadataAccount = await connection.getAccountInfo(metadata);
-    const inscriptionAccount = await connection.getAccountInfo(inscription);
     const inscriptionV3Account = await connection.getAccountInfo(inscriptionV3);
     const inscriptionDataAccount = await connection.getAccountInfo(
       inscriptionData
@@ -170,7 +164,6 @@ describe("solmap", () => {
     // Accounts were created.
     expect(mintAccount).to.not.be.null;
     expect(metadataAccount).to.not.be.null;
-    expect(inscriptionAccount).to.not.be.null;
     expect(inscriptionV3Account).to.not.be.null;
     expect(inscriptionDataAccount).to.not.be.null;
 
@@ -196,7 +189,7 @@ describe("solmap", () => {
     );
 
     // Inscription is immutable (authority is set to system program).
-    expect(inscriptionAccount.data.slice(8, 40)).to.deep.equal(
+    expect(inscriptionV3Account.data.slice(8, 40)).to.deep.equal(
       Buffer.alloc(32, 0)
     );
   });
@@ -218,11 +211,8 @@ describe("solmap", () => {
           metadata,
           masterEdition,
           fvca,
-          inscription,
           inscriptionV3,
           inscriptionData,
-          inscriptionRanksCurrentPage,
-          inscriptionRanksNextPage,
           inscriptionSummary,
           inscriptionsProgram: INSCRIPTION_PROGRAM_ID,
           systemProgram: anchor.web3.SystemProgram.programId,
@@ -249,7 +239,6 @@ describe("solmap", () => {
     // Check that accounts were not created.
     const mintAccount = await connection.getAccountInfo(mint.publicKey);
     const metadataAccount = await connection.getAccountInfo(metadata);
-    const inscriptionAccount = await connection.getAccountInfo(inscription);
     const inscriptionV3Account = await connection.getAccountInfo(inscriptionV3);
     const inscriptionDataAccount = await connection.getAccountInfo(
       inscriptionData
@@ -258,7 +247,6 @@ describe("solmap", () => {
     // Accounts were not created.
     expect(mintAccount).to.be.null;
     expect(metadataAccount).to.be.null;
-    expect(inscriptionAccount).to.be.null;
     expect(inscriptionV3Account).to.be.null;
     expect(inscriptionDataAccount).to.be.null;
   });
@@ -279,11 +267,8 @@ describe("solmap", () => {
         metadata,
         masterEdition,
         fvca,
-        inscription,
         inscriptionV3,
         inscriptionData,
-        inscriptionRanksCurrentPage,
-        inscriptionRanksNextPage,
         inscriptionSummary,
         inscriptionsProgram: INSCRIPTION_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -300,7 +285,6 @@ describe("solmap", () => {
     // Fetch accounts.
     const mintAccount = await connection.getAccountInfo(mint.publicKey);
     const metadataAccount = await connection.getAccountInfo(metadata);
-    const inscriptionAccount = await connection.getAccountInfo(inscription);
     const inscriptionV3Account = await connection.getAccountInfo(inscriptionV3);
     const inscriptionDataAccount = await connection.getAccountInfo(
       inscriptionData
@@ -309,7 +293,6 @@ describe("solmap", () => {
     // Accounts were created.
     expect(mintAccount).to.not.be.null;
     expect(metadataAccount).to.not.be.null;
-    expect(inscriptionAccount).to.not.be.null;
     expect(inscriptionV3Account).to.not.be.null;
     expect(inscriptionDataAccount).to.not.be.null;
 
@@ -362,11 +345,8 @@ describe("solmap", () => {
           metadata: secondMetadata,
           masterEdition: secondMasterEdition,
           fvca,
-          inscription: secondInscription,
           inscriptionV3: secondInscriptionV3,
           inscriptionData: secondInscriptionData,
-          inscriptionRanksCurrentPage,
-          inscriptionRanksNextPage,
           inscriptionSummary,
           inscriptionsProgram: INSCRIPTION_PROGRAM_ID,
           systemProgram: anchor.web3.SystemProgram.programId,
