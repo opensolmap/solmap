@@ -6,12 +6,15 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-use crate::{commands::instructions::create_mint_solmap_ix, setup::CliConfig};
+use crate::{
+    commands::instructions::create_mint_solmap_ix, constants::PRIORITY_FEE_RATE, setup::CliConfig,
+};
 
 pub struct MintArgs {
     pub keypair_path: Option<PathBuf>,
     pub rpc_url: Option<String>,
     pub solmap_number: u64,
+    pub boost: bool,
 }
 
 pub fn mint(args: MintArgs) -> Result<()> {
@@ -21,9 +24,19 @@ pub fn mint(args: MintArgs) -> Result<()> {
     let mint = Keypair::new();
 
     let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(400_000);
-    let mint_solmap_ix =
-        create_mint_solmap_ix(config.keypair.pubkey(), mint.pubkey(), args.solmap_number);
-    let instructions = vec![compute_budget_ix, mint_solmap_ix];
+    let mut instructions = vec![compute_budget_ix];
+
+    if args.boost {
+        instructions.push(ComputeBudgetInstruction::set_compute_unit_price(
+            PRIORITY_FEE_RATE,
+        ));
+    }
+
+    instructions.push(create_mint_solmap_ix(
+        config.keypair.pubkey(),
+        mint.pubkey(),
+        args.solmap_number,
+    ));
 
     let blockhash = config.client.get_latest_blockhash()?;
 

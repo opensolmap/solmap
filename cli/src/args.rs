@@ -19,6 +19,13 @@ pub struct Args {
 
 #[derive(Clone, Subcommand)]
 pub enum Commands {
-    CheckMinted { solmap: u64 },
-    Mint { solmap: u64 },
+    CheckMinted {
+        solmap: u64,
+    },
+    Mint {
+        solmap: u64,
+
+        #[clap(long)]
+        boost: bool,
+    },
 }

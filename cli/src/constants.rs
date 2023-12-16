@@ -13,3 +13,5 @@ pub const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz2
 
 pub const MINT_SOLMAP_DISC: [u8; 8] = [51, 57, 225, 47, 182, 146, 137, 166];
 pub const INIT_INDEX_DISC: [u8; 8] = [206, 236, 58, 58, 171, 221, 237, 57];
+
+pub const PRIORITY_FEE_RATE: u64 = 25000;
