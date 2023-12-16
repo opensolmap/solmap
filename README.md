@@ -66,3 +66,11 @@ solmap check 12345
 ```bash
 solmap mint 12345
 ```
+
+## Boost
+
+If transactions are not going through due to high mint demand, you can pay a small additional fee to boost your transaction.
+
+```bash
+solmap mint 12345 --boost
+```

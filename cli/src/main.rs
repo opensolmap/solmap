@@ -20,10 +20,11 @@ fn main() -> Result<()> {
             rpc_url,
             solmap_number: solmap,
         }),
-        Commands::Mint { solmap } => mint(MintArgs {
+        Commands::Mint { solmap, boost } => mint(MintArgs {
             keypair_path,
             rpc_url,
             solmap_number: solmap,
+            boost,
         }),
     }
 }
