@@ -40,7 +40,7 @@ const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEP
 const GO_LIVE_DATE: i64 = if cfg!(feature = "anchor-test") {
     0 // Always live for tests.
 } else {
-    1703062800 // 2023-12-20T00:00:00Z
+    1703107200 // Wed Dec 20 2023 21:20:00 GMT+0000
 };
 
 #[program]
