@@ -29,10 +29,10 @@ use utils::{create_or_allocate_account_raw, resize_or_reallocate_account_raw};
 
 use crate::error::SolmapError;
 
-declare_id!("9iSon7JwYNRF5UuCgvwucFRDSPGxLFuNCghr56q5khwR");
+declare_id!("SoLMAPutKhdpSSGpCCWioKfqqNQhsdaM8EEi41ummJM");
 
-const COMMUNITY_GRANT_FEE: u64 = 50_000_000; // 0.05 SOL
-const COMMUNITY_TREASURY: Pubkey = pubkey!("moar8bV9AjnbMMF9xZ6LYV6BUwZHiepGciWDfVUT9uX");
+const COMMUNITY_GRANT_FEE: u64 = 30_000_000; // 0.03 SOL
+const COMMUNITY_TREASURY: Pubkey = pubkey!("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXoBXnFr6CB");
 
 const SOLMAP_URI: &str = "https://arweave.net/KtjcXOfeTK0RnUtLuVNBBtPG6iXH4ySncYEW-bl-NHk";
 const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp");
