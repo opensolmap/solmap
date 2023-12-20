@@ -5,3 +5,5 @@ pub use init::*;
 pub mod mint;
 pub use mint::*;
 pub mod instructions;
+pub mod total_minted;
+pub use total_minted::*;
