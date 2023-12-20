@@ -53,7 +53,11 @@ anchor test
 
 Install on Linux or Mac with:
 
+```bash
 bash <(curl -sSf https://raw.githubusercontent.com/opensolmap/solmap/main/scripts/install.sh)
+```
+
+Or install with Rust from source.
 
 ## Check if a Solmap is minted
 
