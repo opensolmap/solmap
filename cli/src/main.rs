@@ -3,7 +3,7 @@ use clap::Parser;
 
 use solmap_cli::{
     args::{Args, Commands},
-    commands::{check_if_minted, mint, CheckArgs, MintArgs},
+    commands::{check_if_minted, init, mint, CheckArgs, InitArgs, MintArgs},
 };
 
 fn main() -> Result<()> {
@@ -15,6 +15,10 @@ fn main() -> Result<()> {
     let rpc_url = args.rpc_url.clone();
 
     match args.command {
+        Commands::InitSlotIndex {} => init(InitArgs {
+            keypair_path,
+            rpc_url,
+        }),
         Commands::CheckMinted { solmap } => check_if_minted(CheckArgs {
             keypair_path,
             rpc_url,

@@ -17,7 +17,11 @@ pub fn check_if_minted(args: CheckArgs) -> Result<()> {
     let slot_index = Pubkey::find_program_address(&[b"slot_index"], &solmap::ID).0;
     let slot_index_account = config.client.get_account(&slot_index)?;
 
+    println!("Slot index account: {:?}", slot_index_account.data);
+
     let slot_index_bits = slot_index_account.data.view_bits::<Lsb0>();
+
+    println!("Slot index bits: {:?}", slot_index_bits);
 
     let slot_index_bit = slot_index_bits
         .get(args.solmap_number as usize)

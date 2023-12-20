@@ -1,8 +1,7 @@
 use solana_program::{pubkey, pubkey::Pubkey};
 
-pub const TREASURY: Pubkey = pubkey!("moar8bV9AjnbMMF9xZ6LYV6BUwZHiepGciWDfVUT9uX");
-pub const SLOT_INDEX: Pubkey = pubkey!("EaTiEN8JxFfmiSnV34YZruekaAR1sXuJvuaKDS3aCapo");
-pub const SOLMAP_PROGRAM_ID: Pubkey = pubkey!("9iSon7JwYNRF5UuCgvwucFRDSPGxLFuNCghr56q5khwR");
+pub const TREASURY: Pubkey = pubkey!("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXoBXnFr6CB");
+pub const SOLMAP_PROGRAM_ID: Pubkey = pubkey!("SoLMAPutKhdpSSGpCCWioKfqqNQhsdaM8EEi41ummJM");
 pub const TOKEN_METADATA_PROGRAM_ID: Pubkey =
     pubkey!("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 pub const TOKEN_PROGRAM_ID: Pubkey = pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");

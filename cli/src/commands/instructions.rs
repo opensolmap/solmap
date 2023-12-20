@@ -35,6 +35,7 @@ pub fn create_mint_solmap_ix(authority: Pubkey, mint: Pubkey, solmap_number: u64
     )
     .0;
 
+    let slot_index = Pubkey::find_program_address(&["slot_index".as_ref()], &SOLMAP_PROGRAM_ID).0;
     let fvca = Pubkey::find_program_address(&["fvca".as_bytes()], &SOLMAP_PROGRAM_ID).0;
 
     let inscription_summary = find_inscription_summary_key();
@@ -45,7 +46,7 @@ pub fn create_mint_solmap_ix(authority: Pubkey, mint: Pubkey, solmap_number: u64
         program_id: SOLMAP_PROGRAM_ID,
         accounts: vec![
             AccountMeta::new(authority, true),
-            AccountMeta::new(SLOT_INDEX, false),
+            AccountMeta::new(slot_index, false),
             AccountMeta::new(TREASURY, false),
             AccountMeta::new(mint, true),
             AccountMeta::new(token, false),

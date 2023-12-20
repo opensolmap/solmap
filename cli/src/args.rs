@@ -19,6 +19,7 @@ pub struct Args {
 
 #[derive(Clone, Subcommand)]
 pub enum Commands {
+    InitSlotIndex {},
     CheckMinted {
         solmap: u64,
     },
