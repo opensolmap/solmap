@@ -34,13 +34,13 @@ declare_id!("SoLMAPutKhdpSSGpCCWioKfqqNQhsdaM8EEi41ummJM");
 const COMMUNITY_GRANT_FEE: u64 = 30_000_000; // 0.03 SOL
 const COMMUNITY_TREASURY: Pubkey = pubkey!("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXoBXnFr6CB");
 
-const SOLMAP_URI: &str = "https://arweave.net/KtjcXOfeTK0RnUtLuVNBBtPG6iXH4ySncYEW-bl-NHk";
+const SOLMAP_URI: &str = "https://arweave.net/o8sskjgVX80gn27pHPp_Q9DlCbIP8twSrHMwzLvm2ZI";
 const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp");
 
 const GO_LIVE_DATE: i64 = if cfg!(feature = "anchor-test") {
     0 // Always live for tests.
 } else {
-    1703107200 // Wed Dec 20 2023 21:20:00 GMT+0000
+    1703108400 // Wed Dec 20 2023 22:20:00 GMT+0000
 };
 
 #[program]
@@ -251,7 +251,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         *slot_index_bit = true;
     }
 
-    // Create mint and ATA.
+    // Create mint and ATA
     let create_args = CreateArgs::V1 {
         name: solmap_string.clone(),
         symbol: "SOLMAP".to_string(),
