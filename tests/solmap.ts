@@ -29,7 +29,7 @@ const ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new PublicKey(
 const INSCRIPTION_PROGRAM_ID = new PublicKey(
   "inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp"
 );
-const TREASURY = new PublicKey("moar8bV9AjnbMMF9xZ6LYV6BUwZHiepGciWDfVUT9uX");
+const TREASURY = new PublicKey("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXoBXnFr6CB");
 
 describe("solmap", () => {
   // Configure the client to use the local cluster.
