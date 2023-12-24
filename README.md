@@ -78,3 +78,9 @@ If transactions are not going through due to high mint demand, you can pay a sma
 ```bash
 solmap mint 12345 --boost
 ```
+
+## Init Slot Index
+
+**Admin Purposes, DO NOT USE**
+
+This command is used to add more space to the SlotIndex account which stores which Solmaps are minted and unminted. It does not need more space at this time, so do not use this command. It will transfer 0.07 SOL to the Slot Index account from your wallet to fund rent and you will not be able  to get that rent back.
