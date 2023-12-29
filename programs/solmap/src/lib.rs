@@ -37,6 +37,10 @@ const COMMUNITY_TREASURY: Pubkey = pubkey!("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXo
 const SOLMAP_URI: &str = "https://arweave.net/o8sskjgVX80gn27pHPp_Q9DlCbIP8twSrHMwzLvm2ZI";
 const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp");
 
+const COMMUNITY_WALLET: Pubkey = pubkey!("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXoBXnFr6CB");
+
+const SEASON_1_SUPPLY: u64 = 240_042;
+
 const GO_LIVE_DATE: i64 = if cfg!(feature = "anchor-test") {
     0 // Always live for tests.
 } else {
@@ -97,7 +101,7 @@ pub struct InitIndex<'info> {
 #[rustfmt::skip]
 #[derive(Accounts)]
 pub struct MintSolmap<'info> {
-    #[account(mut)]
+    #[account(mut, address = COMMUNITY_WALLET)]
     pub minter: Signer<'info>,
 
     /// CHECK: seeds check here
@@ -229,6 +233,11 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     let solmap_bytes = solmap_string.as_bytes();
 
     // Solmap validations
+
+    // Solmap must be less than SEASON_1_SUPPLY.
+    if solmap_number >= SEASON_1_SUPPLY {
+        return Err(SolmapError::InvalidSolmapNumber.into());
+    }
 
     // Slots are stored in the slot index account as a bit array.
     // 1 means minted, 0 means not minted.
