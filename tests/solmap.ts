@@ -14,8 +14,24 @@ import {
 } from "@solana/web3.js";
 import { assert, expect } from "chai";
 import { sha256 } from "@noble/hashes/sha256";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import {
+  createAndMint,
+  fetchMetadata,
+  mplTokenMetadata,
+  updateV1,
+  UpdateV1InstructionAccounts
+} from "@metaplex-foundation/mpl-token-metadata";
 
 import tokenMetadata from "../token_metadata.json";
+import testKeypair from "./test_keypair.json";
+import testMcc from "./test_mcc.json";
+import {
+  createSignerFromKeypair,
+  generatedSignerIdentity,
+  publicKey,
+  sol
+} from "@metaplex-foundation/umi";
 
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
@@ -30,16 +46,22 @@ const INSCRIPTION_PROGRAM_ID = new PublicKey(
   "inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp"
 );
 const TREASURY = new PublicKey("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXoBXnFr6CB");
+const SOLMAP_URI =
+  "https://arweave.net/o8sskjgVX80gn27pHPp_Q9DlCbIP8twSrHMwzLvm2ZI";
 
 describe("solmap", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
+  const umi = createUmi("http://localhost:8899")
+    .use(mplTokenMetadata())
+    .use(generatedSignerIdentity());
+
   const connection = new Connection("http://localhost:8899", "confirmed");
 
   const program = anchor.workspace.Solmap as Program<Solmap>;
 
-  const payer = anchor.web3.Keypair.generate();
+  const payer = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKeypair));
 
   const tokenMetadataIdl: Idl = tokenMetadata as Idl;
   const tmCoder = new BorshAccountsCoder(tokenMetadataIdl);
@@ -48,8 +70,40 @@ describe("solmap", () => {
     units: 400_000
   });
 
+  // These don't change between tests and can be reused.
+  const slotIndex = PublicKey.findProgramAddressSync(
+    [Buffer.from("slot_index")],
+    program.programId
+  )[0];
+  const fvca = PublicKey.findProgramAddressSync(
+    [Buffer.from("fvca")],
+    program.programId
+  )[0];
+
+  // Mint a MCC NFT
+  const mcc = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testMcc));
+  const mccKeypair = umi.eddsa.createKeypairFromSecretKey(mcc.secretKey);
+  const mccMetadata = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("metadata"),
+      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      mcc.publicKey.toBuffer()
+    ],
+    TOKEN_METADATA_PROGRAM_ID
+  )[0];
+  const mccMasterEdition = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("metadata"),
+      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      mcc.publicKey.toBuffer(),
+      Buffer.from("edition")
+    ],
+    TOKEN_METADATA_PROGRAM_ID
+  )[0];
+
   before(async () => {
     await connection.requestAirdrop(payer.publicKey, 1000000000);
+    await umi.rpc.airdrop(umi.payer.publicKey, sol(1));
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -64,17 +118,46 @@ describe("solmap", () => {
       .rpc({
         skipPreflight: true
       });
+
+    await createAndMint(umi, {
+      metadata: publicKey(mccMetadata),
+      masterEdition: publicKey(mccMasterEdition),
+      mint: createSignerFromKeypair(umi, mccKeypair),
+      payer: umi.payer,
+      authority: umi.payer,
+      systemProgram: publicKey(anchor.web3.SystemProgram.programId),
+      sysvarInstructions: publicKey(anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY),
+      splTokenProgram: publicKey(TOKEN_PROGRAM_ID),
+      name: "collection.solmap",
+      uri: SOLMAP_URI,
+      creators: null,
+      sellerFeeBasisPoints: {
+        basisPoints: BigInt(0),
+        identifier: "%",
+        decimals: 2
+      },
+      tokenStandard: 0
+    }).sendAndConfirm(umi);
+
+    await updateV1(umi, {
+      authority: umi.payer,
+      delegateRecord: null,
+      token: null,
+      mint: mccKeypair.publicKey,
+      metadata: publicKey(mccMetadata),
+      edition: publicKey(mccMasterEdition),
+      payer: umi.payer,
+      systemProgram: publicKey(anchor.web3.SystemProgram.programId),
+      sysvarInstructions: publicKey(anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY),
+      authorizationRulesProgram: null,
+      authorizationRules: null,
+      newUpdateAuthority: publicKey(fvca)
+    }).sendAndConfirm(umi);
+
+    const mccNft = await fetchMetadata(umi, publicKey(mccMetadata));
+    expect(mccNft.name).to.equal("collection.solmap");
   });
 
-  // These don't change between tests and can be reused.
-  const slotIndex = PublicKey.findProgramAddressSync(
-    [Buffer.from("slot_index")],
-    program.programId
-  )[0];
-  const fvca = PublicKey.findProgramAddressSync(
-    [Buffer.from("fvca")],
-    program.programId
-  )[0];
   const inscriptionSummary = findInscriptionSummaryKey();
   const [inscriptionRanksCurrentPage, inscriptionRanksNextPage] =
     findInscriptionRankPages();
@@ -136,6 +219,9 @@ describe("solmap", () => {
         metadata,
         masterEdition,
         fvca,
+        mcc: mcc.publicKey,
+        collectionMetadata: mccMetadata,
+        collectionMasterEdition: mccMasterEdition,
         inscriptionV3,
         inscriptionData,
         inscriptionSummary,
@@ -210,6 +296,9 @@ describe("solmap", () => {
           tokenAccount,
           metadata,
           masterEdition,
+          mcc: mcc.publicKey,
+          collectionMetadata: mccMetadata,
+          collectionMasterEdition: mccMasterEdition,
           fvca,
           inscriptionV3,
           inscriptionData,
@@ -228,6 +317,7 @@ describe("solmap", () => {
 
       assert.fail();
     } catch (_err) {
+      console.log(_err);
       assert.isTrue(_err instanceof ProgramError);
       const err: ProgramError = _err;
       expect(err.code).to.equal(6001);
@@ -253,7 +343,7 @@ describe("solmap", () => {
 
   it("cannot mint an existing Solmap", async () => {
     // Mint a Solmap
-    const solmapNum = new anchor.BN(2);
+    const solmapNum = new anchor.BN(1);
 
     const tx = await program.methods
       .mint(solmapNum)
@@ -266,6 +356,9 @@ describe("solmap", () => {
         tokenAccount,
         metadata,
         masterEdition,
+        mcc: mcc.publicKey,
+        collectionMetadata: mccMetadata,
+        collectionMasterEdition: mccMasterEdition,
         fvca,
         inscriptionV3,
         inscriptionData,
@@ -344,6 +437,9 @@ describe("solmap", () => {
           tokenAccount: secondTokenAccount,
           metadata: secondMetadata,
           masterEdition: secondMasterEdition,
+          mcc: mcc.publicKey,
+          collectionMetadata: mccMetadata,
+          collectionMasterEdition: mccMasterEdition,
           fvca,
           inscriptionV3: secondInscriptionV3,
           inscriptionData: secondInscriptionData,
@@ -367,6 +463,104 @@ describe("solmap", () => {
       expect(err.code).to.equal(6002);
       expect(err.msg).to.equal("Solmap already minted");
     }
+  });
+
+  it("can update a NFT with a MCC ID", async () => {
+    const solmapNum = new anchor.BN(2);
+
+    // Mint a Solmap
+    await program.methods
+      .mint(solmapNum)
+      .preInstructions([computeBudgetIx])
+      .accounts({
+        minter: payer.publicKey,
+        slotIndex,
+        treasury: TREASURY,
+        mint: mint.publicKey,
+        tokenAccount,
+        metadata,
+        masterEdition,
+        mcc: mcc.publicKey,
+        collectionMetadata: mccMetadata,
+        collectionMasterEdition: mccMasterEdition,
+        fvca,
+        inscriptionV3,
+        inscriptionData,
+        inscriptionSummary,
+        inscriptionsProgram: INSCRIPTION_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        sysvarInstructions: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
+        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
+      })
+      .signers([payer, mint])
+      .rpc({
+        skipPreflight: true
+      });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Check that accounts were created.
+    const mintAccount = await connection.getAccountInfo(mint.publicKey);
+    const metadataAccount = await connection.getAccountInfo(metadata);
+    const inscriptionV3Account = await connection.getAccountInfo(inscriptionV3);
+    const inscriptionDataAccount = await connection.getAccountInfo(
+      inscriptionData
+    );
+
+    // Accounts were created.
+    expect(mintAccount).to.not.be.null;
+    expect(metadataAccount).to.not.be.null;
+    expect(inscriptionV3Account).to.not.be.null;
+    expect(inscriptionDataAccount).to.not.be.null;
+
+    // Metadata is correct.
+    // Prepend the discriminator to get the coder to decode.
+    const mdDisc = Buffer.from(sha256("account:Metadata")).slice(0, 8);
+    metadataAccount.data = Buffer.concat([mdDisc, metadataAccount.data]);
+
+    const solmap = `${solmapNum}.solmap`;
+
+    const metadataStruct = tmCoder.decode("Metadata", metadataAccount.data);
+    expect(metadataStruct.data.name.replace(/\0/g, "")).to.equal(solmap);
+    expect(metadataStruct.data.symbol.replace(/\0/g, "")).to.equal("SOLMAP");
+    expect(metadataStruct.data.creators[0].address.toString()).to.equal(
+      fvca.toString()
+    );
+    expect(metadataStruct.data.creators[0].verified).to.equal(true);
+    expect(metadataStruct.isMutable).to.equal(true);
+
+    // Inscription data is correct.
+    expect(inscriptionDataAccount.data).to.deep.equal(
+      Buffer.from(solmap, "binary")
+    );
+
+    // Inscription is immutable (authority is set to system program).
+    expect(inscriptionV3Account.data.slice(8, 40)).to.deep.equal(
+      Buffer.alloc(32, 0)
+    );
+
+    await program.methods
+      .addMcc()
+      .accounts({
+        authority: payer.publicKey,
+        mint: mint.publicKey,
+        metadata,
+        mcc: mcc.publicKey,
+        collectionMetadata: mccMetadata,
+        collectionMasterEdition: mccMasterEdition,
+        fvca,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        sysvarInstructions: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
+        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
+      })
+      .signers([payer])
+      .rpc({
+        skipPreflight: true
+      });
   });
 });
 

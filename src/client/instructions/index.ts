@@ -1,4 +1,6 @@
 export { initIndex } from "./initIndex"
 export type { InitIndexAccounts } from "./initIndex"
+export { addMcc } from "./addMcc"
+export type { AddMccAccounts } from "./addMcc"
 export { mint } from "./mint"
 export type { MintArgs, MintAccounts } from "./mint"
