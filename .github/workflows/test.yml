@@ -41,7 +41,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-      - run: pnpm anchor-test
       - uses: metadaoproject/anchor-test@v2
         with:
           anchor-version: '0.29.0'
