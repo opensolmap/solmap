@@ -33,7 +33,7 @@ export function addMcc(
       isSigner: false,
       isWritable: false,
     },
-    { pubkey: accounts.fvca, isSigner: false, isWritable: false },
+    { pubkey: accounts.fvca, isSigner: false, isWritable: true },
     { pubkey: accounts.systemProgram, isSigner: false, isWritable: false },
     { pubkey: accounts.sysvarInstructions, isSigner: false, isWritable: false },
     {
