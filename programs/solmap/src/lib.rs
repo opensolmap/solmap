@@ -1,7 +1,6 @@
-use anchor_lang::{accounts::account::Account, prelude::*};
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    metadata::Metadata,
     token::{Mint, Token},
 };
 use bitvec::prelude::*;
@@ -11,13 +10,17 @@ use libreplex_inscriptions::{
     },
     instructions::{SignerType, WriteToInscriptionInput},
 };
-use mpl_token_metadata::types::{CreateArgs, Creator, MintArgs, TokenStandard};
+use mpl_token_metadata::{
+    accounts::{MasterEdition, Metadata},
+    instructions::{SetAndVerifyCollection, VerifyCpi, VerifyInstructionArgs},
+    types::{Collection, CreateArgs, Creator, MintArgs, TokenStandard, VerificationArgs},
+};
 use mpl_token_metadata::{
     instructions::{CreateCpiBuilder, MintCpiBuilder},
     types::PrintSupply,
 };
 use solana_program::{
-    program::invoke,
+    program::{invoke, invoke_signed},
     system_instruction,
     sysvar::{instructions::Instructions, SysvarId},
     {pubkey, pubkey::Pubkey},
@@ -37,7 +40,17 @@ const COMMUNITY_TREASURY: Pubkey = pubkey!("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXo
 const SOLMAP_URI: &str = "https://arweave.net/o8sskjgVX80gn27pHPp_Q9DlCbIP8twSrHMwzLvm2ZI";
 const INSCRIPTION_PROGRAM_ID: Pubkey = pubkey!("inscokhJarcjaEs59QbQ7hYjrKz25LEPRfCbP8EmdUp");
 
-const COMMUNITY_WALLET: Pubkey = pubkey!("72GEqCXZ5GLWnCWon5LBXjsZaoUh8jmarhXoBXnFr6CB");
+const DEPLOY_AUTH: Pubkey = if cfg!(feature = "anchor-test") {
+    pubkey!("5vHqxWaUMhQjjYkffkba91BwtVMAKyX62fy1mexdgGHU")
+} else {
+    pubkey!("GVjofg6NHMq9jwThd79WWuh9aCa1m82qmuV68YwexzEQ")
+};
+
+const SOLMAP_MCC: Pubkey = if cfg!(feature = "anchor-test") {
+    pubkey!("5sEHGFo7PYFQamTxkH37qayQLtK7QyCDUWUvCskACwMG")
+} else {
+    pubkey!("smccQeqMfKUE3W4a1tQHDxUnx122y3eUoV21JDnQj54")
+};
 
 const SEASON_1_SUPPLY: u64 = 240_042;
 
@@ -77,6 +90,10 @@ pub mod solmap {
         Ok(())
     }
 
+    pub fn add_mcc(ctx: Context<AddMcc>) -> Result<()> {
+        add_mcc_handler(ctx)
+    }
+
     pub fn mint(ctx: Context<MintSolmap>, solmap: u64) -> Result<()> {
         mint_handler(ctx, solmap)
     }
@@ -100,8 +117,128 @@ pub struct InitIndex<'info> {
 
 #[rustfmt::skip]
 #[derive(Accounts)]
+pub struct AddMcc<'info> {
+    #[account(mut, address = DEPLOY_AUTH)]
+    pub authority: Signer<'info>,
+
+    pub mint: Account<'info, Mint>,
+
+    /// CHECK: seeds and ownership checked here, Token Metadata provides the rest of validations
+    #[account(mut,
+        seeds = [
+            Metadata::PREFIX,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+        ],
+        bump,
+        seeds::program = mpl_token_metadata::ID,
+    )]
+    pub metadata: UncheckedAccount<'info>,
+
+    /// CHECK: address checked here
+    #[account(address = SOLMAP_MCC)]
+    pub mcc: UncheckedAccount<'info>,
+
+        /// CHECK: seeds and ownership checked here
+    #[account(
+        seeds = [
+            Metadata::PREFIX,
+            mpl_token_metadata::ID.as_ref(),
+            mcc.key().as_ref(),
+        ],
+        bump,
+        seeds::program = mpl_token_metadata::ID,
+    )]
+    pub collection_metadata: UncheckedAccount<'info>,
+
+        /// CHECK: seeds and ownership checked here
+    #[account(
+        seeds = [
+            MasterEdition::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mcc.key().as_ref(),
+            MasterEdition::PREFIX.1,
+        ],
+        bump,
+        seeds::program = mpl_token_metadata::ID,
+    )]
+    pub collection_master_edition: UncheckedAccount<'info>,
+
+    /// CHECK: seeds and ownership checked here
+    #[account(
+        seeds = ["fvca".as_bytes()],
+        bump
+    )]
+    pub fvca: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+
+    /// CHECK: address checked here
+    #[account(address = Instructions::id())]
+    pub sysvar_instructions: UncheckedAccount<'info>,
+
+    /// CHECK: address checked here
+    #[account(address = mpl_token_metadata::ID)]
+    pub token_metadata_program: UncheckedAccount<'info>,
+
+    #[account()]
+    pub token_program: Program<'info, Token>,
+
+    pub associated_token_program: Program<'info, AssociatedToken>,
+}
+
+pub fn add_mcc_handler(ctx: Context<AddMcc>) -> Result<()> {
+    let metadata = &ctx.accounts.metadata;
+    let mcc = &ctx.accounts.mcc;
+
+    let md = Metadata::safe_deserialize(&metadata.data.borrow())?;
+
+    // Ensure Solmaps have a FVCA that matches what we expect.
+    if let Some(creators) = md.creators {
+        let fc = creators.first().unwrap();
+        if fc.address != *ctx.accounts.fvca.key || !fc.verified {
+            return Err(SolmapError::InvalidSolmapNFT.into());
+        }
+    } else {
+        return Err(SolmapError::InvalidSolmapNFT.into());
+    }
+
+    let mut ix = SetAndVerifyCollection {
+        metadata: metadata.key(),
+        collection_authority: ctx.accounts.fvca.key(),
+        payer: ctx.accounts.authority.key(),
+        update_authority: ctx.accounts.fvca.key(),
+        collection_mint: mcc.key(),
+        collection: ctx.accounts.collection_metadata.key(),
+        collection_master_edition_account: ctx.accounts.collection_master_edition.key(),
+        collection_authority_record: None,
+    }
+    .instruction();
+
+    let account_infos = &[
+        metadata.to_account_info(),
+        ctx.accounts.fvca.to_account_info(),
+        ctx.accounts.authority.to_account_info(),
+        mcc.to_account_info(),
+        ctx.accounts.collection_metadata.to_account_info(),
+        ctx.accounts.collection_master_edition.to_account_info(),
+        ctx.accounts.token_metadata_program.to_account_info(),
+        ctx.accounts.sysvar_instructions.to_account_info(),
+    ];
+
+    // This account doesn't actually need to be writable.
+    let collection_authority_meta = ix.accounts.get_mut(1).unwrap();
+    collection_authority_meta.is_writable = false;
+
+    invoke_signed(&ix, account_infos, &[&[b"fvca", &[ctx.bumps.fvca]]])?;
+
+    Ok(())
+}
+
+#[rustfmt::skip]
+#[derive(Accounts)]
 pub struct MintSolmap<'info> {
-    #[account(mut, address = COMMUNITY_WALLET)]
+    #[account(mut)]
     pub minter: Signer<'info>,
 
     /// CHECK: seeds check here
@@ -136,25 +273,25 @@ pub struct MintSolmap<'info> {
     /// CHECK: seeds check here, Token Metadata provides the rest of validations
     #[account(mut, 
         seeds = [
-            b"metadata",
-            Metadata::id().as_ref(),
+            Metadata::PREFIX,
+            mpl_token_metadata::ID.as_ref(),
             mint.key().as_ref(),
         ],
         bump,
-        seeds::program = Metadata::id(),
+        seeds::program = mpl_token_metadata::ID,
     )]
     pub metadata: UncheckedAccount<'info>,
 
     /// CHECK: seeds check here, Token Metadata provides the rest of validations
     #[account(mut, 
         seeds = [
-            b"metadata",
-            Metadata::id().as_ref(),
+            MasterEdition::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
             mint.key().as_ref(),
-            b"edition",
+            MasterEdition::PREFIX.1,
         ],
         bump,
-        seeds::program = Metadata::id(),
+        seeds::program = mpl_token_metadata::ID,
     )]
     pub master_edition: UncheckedAccount<'info>,
 
@@ -165,6 +302,36 @@ pub struct MintSolmap<'info> {
         bump
     )]
     pub fvca: UncheckedAccount<'info>,
+
+        /// CHECK: seeds check here
+    #[account(address = SOLMAP_MCC)]
+    pub mcc: UncheckedAccount<'info>,
+
+            /// CHECK: seeds check here, Token Metadata provides the rest of validations
+    #[account(
+        mut,
+        seeds = [
+            Metadata::PREFIX,
+            mpl_token_metadata::ID.as_ref(),
+            mcc.key().as_ref(),
+        ],
+        bump,
+        seeds::program = mpl_token_metadata::ID,
+    )]
+    pub collection_metadata: UncheckedAccount<'info>,
+
+        /// CHECK: seeds check here, Token Metadata provides the rest of validations
+    #[account(
+        seeds = [
+            MasterEdition::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mcc.key().as_ref(),
+            MasterEdition::PREFIX.1,
+        ],
+        bump,
+        seeds::program = mpl_token_metadata::ID,
+    )]
+    pub collection_master_edition: UncheckedAccount<'info>,
     
     /// CHECK: Validated by inscriptions program
     #[account(mut)]
@@ -194,7 +361,7 @@ pub struct MintSolmap<'info> {
     pub sysvar_instructions: UncheckedAccount<'info>,
 
     /// CHECK: address checked here
-    #[account(address = Metadata::id())]
+    #[account(address = mpl_token_metadata::ID)]
     pub token_metadata_program: UncheckedAccount<'info>,
 
     #[account()]
@@ -223,6 +390,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
     let metadata = &ctx.accounts.metadata;
     let master_edition = &ctx.accounts.master_edition;
 
+    let token_metadata_program = &ctx.accounts.token_metadata_program;
     let sysvar_instructions = &ctx.accounts.sysvar_instructions;
     let system_program = &ctx.accounts.system_program;
     let token_program = &ctx.accounts.token_program;
@@ -274,7 +442,10 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         primary_sale_happened: true,
         is_mutable: true,
         token_standard: TokenStandard::NonFungible,
-        collection: None,
+        collection: Some(Collection {
+            key: SOLMAP_MCC,
+            verified: false, // need to verify in a separate instruction
+        }),
         uses: None,
         collection_details: None,
         rule_set: None,
@@ -293,7 +464,7 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         .authority(minter)
         .update_authority(fvca, true)
         .system_program(system_program)
-        .spl_token_program(token_program)
+        .spl_token_program(Some(&token_program.to_account_info()))
         .sysvar_instructions(sysvar_instructions)
         .create_args(create_args)
         .invoke_signed(&[fvca_seeds])?;
@@ -319,6 +490,22 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         .sysvar_instructions(sysvar_instructions)
         .mint_args(mint_args)
         .invoke_signed(&[fvca_seeds])?;
+
+    VerifyCpi {
+        __program: token_metadata_program,
+        authority: &ctx.accounts.fvca,
+        delegate_record: None,
+        metadata: &ctx.accounts.metadata,
+        collection_mint: Some(&ctx.accounts.mcc),
+        collection_metadata: Some(&ctx.accounts.collection_metadata),
+        collection_master_edition: Some(&ctx.accounts.collection_master_edition),
+        system_program: &ctx.accounts.system_program,
+        sysvar_instructions: &ctx.accounts.sysvar_instructions,
+        __args: VerifyInstructionArgs {
+            verification_args: VerificationArgs::CollectionV1,
+        },
+    }
+    .invoke_signed(&[&[b"fvca", &[ctx.bumps.fvca]]])?;
 
     // Create inscription.
     libreplex_inscriptions::cpi::create_inscription_v3(

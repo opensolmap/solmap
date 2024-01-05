@@ -16,7 +16,6 @@ jobs:
         os:
           - windows-latest
           - buildjet-16vcpu-ubuntu-2004
-          # - ubuntu-latest
           - macos-latest
 
     runs-on: ${{ matrix.os }}
