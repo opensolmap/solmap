@@ -316,7 +316,6 @@ describe("solmap", () => {
 
       assert.fail();
     } catch (_err) {
-      console.log(_err);
       assert.isTrue(_err instanceof ProgramError);
       const err: ProgramError = _err;
       expect(err.code).to.equal(6001);
