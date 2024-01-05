@@ -101,6 +101,7 @@ describe("solmap", () => {
 
   before(async () => {
     await connection.requestAirdrop(payer.publicKey, 1000000000);
+    await connection.requestAirdrop(program.provider.publicKey, 1000000000);
     await umi.rpc.airdrop(umi.payer.publicKey, sol(1));
 
     await new Promise((resolve) => setTimeout(resolve, 500));
