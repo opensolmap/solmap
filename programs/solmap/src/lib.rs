@@ -12,10 +12,7 @@ use libreplex_inscriptions::{
 };
 use mpl_token_metadata::{
     accounts::{MasterEdition, Metadata},
-    instructions::{
-        SetAndVerifyCollectionCpi, SetAndVerifyCollectionCpiAccounts, VerifyCpi,
-        VerifyInstructionArgs,
-    },
+    instructions::{SetAndVerifyCollection, VerifyCpi, VerifyInstructionArgs},
     types::{Collection, CreateArgs, Creator, MintArgs, TokenStandard, VerificationArgs},
 };
 use mpl_token_metadata::{
@@ -23,7 +20,7 @@ use mpl_token_metadata::{
     types::PrintSupply,
 };
 use solana_program::{
-    program::invoke,
+    program::{invoke, invoke_signed},
     system_instruction,
     sysvar::{instructions::Instructions, SysvarId},
     {pubkey, pubkey::Pubkey},
@@ -144,7 +141,6 @@ pub struct AddMcc<'info> {
 
         /// CHECK: seeds and ownership checked here
     #[account(
-        mut,
         seeds = [
             Metadata::PREFIX,
             mpl_token_metadata::ID.as_ref(),
@@ -170,7 +166,6 @@ pub struct AddMcc<'info> {
 
     /// CHECK: seeds and ownership checked here
     #[account(
-        mut,
         seeds = ["fvca".as_bytes()],
         bump
     )]
@@ -195,22 +190,47 @@ pub struct AddMcc<'info> {
 pub fn add_mcc_handler(ctx: Context<AddMcc>) -> Result<()> {
     let metadata = &ctx.accounts.metadata;
     let mcc = &ctx.accounts.mcc;
-    let token_metadata_program = &ctx.accounts.token_metadata_program;
 
-    SetAndVerifyCollectionCpi::new(
-        token_metadata_program,
-        SetAndVerifyCollectionCpiAccounts {
-            metadata: &metadata.to_account_info(),
-            collection_authority: &ctx.accounts.fvca,
-            payer: &ctx.accounts.authority,
-            update_authority: &ctx.accounts.fvca,
-            collection_mint: &mcc.to_account_info(),
-            collection: &ctx.accounts.collection_metadata,
-            collection_master_edition_account: &ctx.accounts.collection_master_edition,
-            collection_authority_record: None,
-        },
-    )
-    .invoke_signed(&[&[b"fvca", &[ctx.bumps.fvca]]])?;
+    let md = Metadata::safe_deserialize(&metadata.data.borrow())?;
+
+    // Ensure Solmaps have a FVCA that matches what we expect.
+    if let Some(creators) = md.creators {
+        let fc = creators.first().unwrap();
+        if fc.address != *ctx.accounts.fvca.key || !fc.verified {
+            return Err(SolmapError::InvalidSolmapNFT.into());
+        }
+    } else {
+        return Err(SolmapError::InvalidSolmapNFT.into());
+    }
+
+    let mut ix = SetAndVerifyCollection {
+        metadata: metadata.key(),
+        collection_authority: ctx.accounts.fvca.key(),
+        payer: ctx.accounts.authority.key(),
+        update_authority: ctx.accounts.fvca.key(),
+        collection_mint: mcc.key(),
+        collection: ctx.accounts.collection_metadata.key(),
+        collection_master_edition_account: ctx.accounts.collection_master_edition.key(),
+        collection_authority_record: None,
+    }
+    .instruction();
+
+    let account_infos = &[
+        metadata.to_account_info(),
+        ctx.accounts.fvca.to_account_info(),
+        ctx.accounts.authority.to_account_info(),
+        mcc.to_account_info(),
+        ctx.accounts.collection_metadata.to_account_info(),
+        ctx.accounts.collection_master_edition.to_account_info(),
+        ctx.accounts.token_metadata_program.to_account_info(),
+        ctx.accounts.sysvar_instructions.to_account_info(),
+    ];
+
+    // This account doesn't actually need to be writable.
+    let collection_authority_meta = ix.accounts.get_mut(1).unwrap();
+    collection_authority_meta.is_writable = false;
+
+    invoke_signed(&ix, account_infos, &[&[b"fvca", &[ctx.bumps.fvca]]])?;
 
     Ok(())
 }

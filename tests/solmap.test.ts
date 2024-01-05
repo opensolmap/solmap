@@ -464,7 +464,7 @@ describe("solmap", () => {
     }
   });
 
-  it("can update a NFT with a MCC ID", async () => {
+  it("can mint a new Solmap NFT with a MCC ID", async () => {
     const solmapNum = new anchor.BN(2);
 
     // Mint a Solmap
@@ -529,6 +529,10 @@ describe("solmap", () => {
     );
     expect(metadataStruct.data.creators[0].verified).to.equal(true);
     expect(metadataStruct.isMutable).to.equal(true);
+    expect(metadataStruct.collection.key.toString()).to.equal(
+      mcc.publicKey.toString()
+    );
+    expect(metadataStruct.collection.verified).to.equal(true);
 
     // Inscription data is correct.
     expect(inscriptionDataAccount.data).to.deep.equal(
@@ -539,27 +543,6 @@ describe("solmap", () => {
     expect(inscriptionV3Account.data.slice(8, 40)).to.deep.equal(
       Buffer.alloc(32, 0)
     );
-
-    await program.methods
-      .addMcc()
-      .accounts({
-        authority: payer.publicKey,
-        mint: mint.publicKey,
-        metadata,
-        mcc: mcc.publicKey,
-        collectionMetadata: mccMetadata,
-        collectionMasterEdition: mccMasterEdition,
-        fvca,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        sysvarInstructions: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
-        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
-      })
-      .signers([payer])
-      .rpc({
-        skipPreflight: true
-      });
   });
 });
 

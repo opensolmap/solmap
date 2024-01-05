@@ -10,4 +10,7 @@ pub enum SolmapError {
 
     #[msg("Solmap already minted")]
     SolmapAlreadyMinted,
+
+    #[msg("Invalid Solmap NFT")]
+    InvalidSolmapNFT,
 }
