@@ -49,7 +49,7 @@ const DEPLOY_AUTH: Pubkey = if cfg!(feature = "anchor-test") {
 const SOLMAP_MCC: Pubkey = if cfg!(feature = "anchor-test") {
     pubkey!("5sEHGFo7PYFQamTxkH37qayQLtK7QyCDUWUvCskACwMG")
 } else {
-    pubkey!("HsRkDzBdpqddRii5jZtJZFthrbVQGc3wHAsDmb5m2Ar5")
+    pubkey!("smccQeqMfKUE3W4a1tQHDxUnx122y3eUoV21JDnQj54")
 };
 
 const SEASON_1_SUPPLY: u64 = 240_042;
