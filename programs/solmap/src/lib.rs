@@ -126,7 +126,7 @@ pub struct AddMcc<'info> {
 
     pub mint: Account<'info, Mint>,
 
-    /// CHECK: seeds check here, Token Metadata provides the rest of validations
+    /// CHECK: seeds and ownership checked here, Token Metadata provides the rest of validations
     #[account(mut,
         seeds = [
             Metadata::PREFIX,
@@ -138,11 +138,11 @@ pub struct AddMcc<'info> {
     )]
     pub metadata: UncheckedAccount<'info>,
 
-    /// CHECK: seeds check here
+    /// CHECK: address checked here
     #[account(address = SOLMAP_MCC)]
     pub mcc: UncheckedAccount<'info>,
 
-        /// CHECK: seeds check here, Token Metadata provides the rest of validations
+        /// CHECK: seeds and ownership checked here
     #[account(
         mut,
         seeds = [
@@ -155,7 +155,7 @@ pub struct AddMcc<'info> {
     )]
     pub collection_metadata: UncheckedAccount<'info>,
 
-        /// CHECK: seeds check here, Token Metadata provides the rest of validations
+        /// CHECK: seeds and ownership checked here
     #[account(
         seeds = [
             MasterEdition::PREFIX.0,
@@ -168,7 +168,7 @@ pub struct AddMcc<'info> {
     )]
     pub collection_master_edition: UncheckedAccount<'info>,
 
-    /// CHECK: Address checked here
+    /// CHECK: seeds and ownership checked here
     #[account(
         mut,
         seeds = ["fvca".as_bytes()],
@@ -178,7 +178,7 @@ pub struct AddMcc<'info> {
 
     pub system_program: Program<'info, System>,
 
-    /// CHECK: address contraints check here
+    /// CHECK: address checked here
     #[account(address = Instructions::id())]
     pub sysvar_instructions: UncheckedAccount<'info>,
 
@@ -205,30 +205,11 @@ pub fn add_mcc_handler(ctx: Context<AddMcc>) -> Result<()> {
             payer: &ctx.accounts.authority,
             update_authority: &ctx.accounts.fvca,
             collection_mint: &mcc.to_account_info(),
-            collection: &ctx.accounts.collection_metadata.to_account_info(),
-            collection_master_edition_account: &ctx
-                .accounts
-                .collection_master_edition
-                .to_account_info(),
+            collection: &ctx.accounts.collection_metadata,
+            collection_master_edition_account: &ctx.accounts.collection_master_edition,
             collection_authority_record: None,
         },
     )
-    .invoke_signed(&[&[b"fvca", &[ctx.bumps.fvca]]])?;
-
-    VerifyCpi {
-        __program: token_metadata_program,
-        authority: &ctx.accounts.fvca.to_account_info(),
-        delegate_record: None,
-        metadata: &metadata.to_account_info(),
-        collection_mint: Some(&mcc.to_account_info()),
-        collection_metadata: Some(&ctx.accounts.collection_metadata.to_account_info()),
-        collection_master_edition: Some(&ctx.accounts.collection_master_edition.to_account_info()),
-        system_program: &ctx.accounts.system_program.to_account_info(),
-        sysvar_instructions: &ctx.accounts.sysvar_instructions.to_account_info(),
-        __args: VerifyInstructionArgs {
-            verification_args: VerificationArgs::CollectionV1,
-        },
-    }
     .invoke_signed(&[&[b"fvca", &[ctx.bumps.fvca]]])?;
 
     Ok(())
@@ -494,12 +475,12 @@ pub fn mint_handler(ctx: Context<MintSolmap>, solmap_number: u64) -> Result<()> 
         __program: token_metadata_program,
         authority: &ctx.accounts.fvca,
         delegate_record: None,
-        metadata: &ctx.accounts.metadata.to_account_info(),
-        collection_mint: Some(&ctx.accounts.mcc.to_account_info()),
-        collection_metadata: Some(&ctx.accounts.collection_metadata.to_account_info()),
-        collection_master_edition: Some(&ctx.accounts.collection_master_edition.to_account_info()),
-        system_program: &ctx.accounts.system_program.to_account_info(),
-        sysvar_instructions: &ctx.accounts.sysvar_instructions.to_account_info(),
+        metadata: &ctx.accounts.metadata,
+        collection_mint: Some(&ctx.accounts.mcc),
+        collection_metadata: Some(&ctx.accounts.collection_metadata),
+        collection_master_edition: Some(&ctx.accounts.collection_master_edition),
+        system_program: &ctx.accounts.system_program,
+        sysvar_instructions: &ctx.accounts.sysvar_instructions,
         __args: VerifyInstructionArgs {
             verification_args: VerificationArgs::CollectionV1,
         },

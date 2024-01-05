@@ -19,8 +19,7 @@ import {
   createAndMint,
   fetchMetadata,
   mplTokenMetadata,
-  updateV1,
-  UpdateV1InstructionAccounts
+  updateV1
 } from "@metaplex-foundation/mpl-token-metadata";
 
 import tokenMetadata from "../token_metadata.json";
@@ -80,7 +79,6 @@ describe("solmap", () => {
     program.programId
   )[0];
 
-  // Mint a MCC NFT
   const mcc = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testMcc));
   const mccKeypair = umi.eddsa.createKeypairFromSecretKey(mcc.secretKey);
   const mccMetadata = PublicKey.findProgramAddressSync(
@@ -105,7 +103,7 @@ describe("solmap", () => {
     await connection.requestAirdrop(payer.publicKey, 1000000000);
     await umi.rpc.airdrop(umi.payer.publicKey, sol(1));
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     await program.methods
       .initIndex()
@@ -119,6 +117,7 @@ describe("solmap", () => {
         skipPreflight: true
       });
 
+    // Mint MCC NFT
     await createAndMint(umi, {
       metadata: publicKey(mccMetadata),
       masterEdition: publicKey(mccMasterEdition),
