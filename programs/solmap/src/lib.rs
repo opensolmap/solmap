@@ -94,9 +94,9 @@ pub mod solmap {
         add_mcc_handler(ctx)
     }
 
-    pub fn mint(ctx: Context<MintSolmap>, solmap: u64) -> Result<()> {
-        mint_handler(ctx, solmap)
-    }
+    // pub fn mint(ctx: Context<MintSolmap>, solmap: u64) -> Result<()> {
+    //     mint_handler(ctx, solmap)
+    // }
 }
 
 #[rustfmt::skip]
@@ -238,7 +238,7 @@ pub fn add_mcc_handler(ctx: Context<AddMcc>) -> Result<()> {
 #[rustfmt::skip]
 #[derive(Accounts)]
 pub struct MintSolmap<'info> {
-    #[account(mut)]
+    #[account(mut, address = DEPLOY_AUTH)]
     pub minter: Signer<'info>,
 
     /// CHECK: seeds check here

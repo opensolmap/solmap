@@ -2240,7 +2240,7 @@ dependencies = [
  "anyhow",
  "borsh 0.10.3",
  "mpl-token-auth-rules",
- "mpl-token-metadata",
+ "mpl-token-metadata 3.2.3",
  "retry",
  "rmp-serde",
  "serde",
@@ -2307,15 +2307,28 @@ dependencies = [
 
 [[package]]
 name = "mpl-token-metadata"
-version = "3.3.0"
+version = "3.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed613b555d758d2df9e0ac079ca6c43749a6f063630074cd7f5162b80ae417c7"
+checksum = "ba8ee05284d79b367ae8966d558e1a305a781fc80c9df51f37775169117ba64f"
 dependencies = [
  "borsh 0.10.3",
  "num-derive 0.3.3",
  "num-traits",
  "serde",
  "serde_with 3.4.0",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
+name = "mpl-token-metadata"
+version = "4.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4b2de608098eb2ef2a5392069dea83084967e25a4d69d0380a6bb02454fc0fe"
+dependencies = [
+ "borsh 0.10.3",
+ "num-derive 0.3.3",
+ "num-traits",
  "solana-program",
  "thiserror",
 ]
@@ -4358,7 +4371,7 @@ dependencies = [
  "bitvec",
  "bytemuck",
  "libreplex_inscriptions",
- "mpl-token-metadata",
+ "mpl-token-metadata 4.1.1",
  "solana-program",
 ]
 

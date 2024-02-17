@@ -22,5 +22,5 @@ anchor-spl = { version = "0.29.0" }
 bitvec = "1"
 bytemuck = "1.14.0"
 libreplex_inscriptions = { version = "0.4.0", features = ["cpi"] }
-mpl-token-metadata = "3.2.3"
-solana-program = "1.16"
+mpl-token-metadata = "4.1.1"
+solana-program = "~1.16"
